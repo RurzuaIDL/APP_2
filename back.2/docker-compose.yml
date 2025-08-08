@@ -1,0 +1,36 @@
+services:
+  postgres_psql:
+    image: postgres:15
+    container_name: postgres_psql
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: DB_psql
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - psql_data:/var/lib/postgresql/data
+
+  backend-springboot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend-springboot
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_psql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_psql:5432/DB_psql
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    volumes:
+      - backup-data:/uploads
+
+volumes:
+  psql_data:
+  backup-data:
+
