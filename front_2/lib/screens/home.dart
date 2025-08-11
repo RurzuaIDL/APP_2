@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:front_2/widgets/dashboard_view.dart';
 import 'package:front_2/widgets/profile.dart';
@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _displayName = 'Guest';
   List<String> _roles = const [];
   int _selectedIndex = 0;
-  bool _railOpen = true; // 👈 controla si el sidebar está visible
+  bool _railOpen = true; 
 
   final _titles = const ['Dashboard', 'Table', 'Messages', 'Team', 'Settings'];
 
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: Text(_titles[safeIndex]),
-        leading: IconButton( // 👈 opcional: reabrir desde AppBar
+        leading: IconButton( 
           tooltip: _railOpen ? 'Ocultar menú' : 'Mostrar menú',
           icon: Icon(_railOpen ? Icons.menu_open : Icons.menu),
           onPressed: () => setState(() => _railOpen = !_railOpen),
@@ -135,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Row(
           children: [
-            // 👇 Bloque del sidebar + divisor: aparece/desaparece completo
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               switchInCurve: Curves.easeOut,
@@ -149,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           roles: _roles,
                           selectedIndex: safeIndex,
                           onSelect: _onDestinationSelected,
-                          onCollapse: () => setState(() => _railOpen = false), // 👈 cierra completo
+                          onCollapse: () => setState(() => _railOpen = false), 
                         ),
                         const VerticalDivider(width: 1),
                       ],
@@ -157,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   : const SizedBox.shrink(key: ValueKey('rail-closed')),
             ),
 
-            // Contenido principal
+           
             Expanded(child: _buildPage(safeIndex)),
           ],
         ),

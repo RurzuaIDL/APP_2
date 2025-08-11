@@ -66,7 +66,7 @@ class _FormContent extends StatefulWidget {
 
 class __FormContentState extends State<_FormContent> {
   final _formKey = GlobalKey<FormState>();
-  final _loginController = TextEditingController(); // username or email
+  final _loginController = TextEditingController(); 
   final _passwordController = TextEditingController();
   final _auth = AuthService();
 
@@ -98,10 +98,8 @@ class __FormContentState extends State<_FormContent> {
     final password = _passwordController.text;
 
     try {
-      // Calls your backend: POST /api/auth/signin with {"username": "...", "password": "..."}
       await _auth.login(userOrEmail, password);
 
-      // Remember-me (just stores the login string)
       final prefs = await SharedPreferences.getInstance();
       if (_rememberMe) {
         await prefs.setString('rememberedLogin', userOrEmail);
@@ -155,7 +153,7 @@ class __FormContentState extends State<_FormContent> {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter your username or email';
                 }
-                return null; // allow username or email (backend accepts either)
+                return null; 
               },
             ),
             _gap(),

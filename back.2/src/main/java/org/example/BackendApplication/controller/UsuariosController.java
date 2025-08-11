@@ -176,10 +176,8 @@
                     return ResponseEntity.status(404).body("Usuario no encontrado");
                 }
 
-                // ✅ Hash con PasswordEncoder
                 user.setPassword(encoder.encode(nuevaPassword));
 
-                // Usa el mismo método que en signup/update para evitar incoherencias
                 userService.saveUser(user);
 
                 return ResponseEntity.ok("Contraseña actualizada con éxito");

@@ -1,12 +1,13 @@
-// lib/widgets/users_widget.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:front_2/models/user_model.dart';
 import 'package:front_2/service/userapi.dart';
 import 'package:front_2/widgets/create_dialog_user.dart';
+import 'package:front_2/widgets/profile.dart';
 
 class UsersWidget extends StatefulWidget {
-  final void Function(AppUser user)? onUserTap; // opcional
+  final void Function(AppUser user)? onUserTap; 
   const UsersWidget({super.key, this.onUserTap});
 
   @override
@@ -100,7 +101,6 @@ class _UsersWidgetState extends State<UsersWidget> {
 
     return Column(
       children: [
-        // 🔍 Filtro
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: Row(
@@ -146,7 +146,7 @@ class _UsersWidgetState extends State<UsersWidget> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Usuario creado')),
                     );
-                    _fetch(); // refresca la lista
+                    _fetch();
                   }
                 },
               ),
@@ -154,13 +154,11 @@ class _UsersWidgetState extends State<UsersWidget> {
           ),
         ),
 
-        // 📋 Lista/Grilla responsive
         Expanded(
           child: LayoutBuilder(
             builder: (context, c) {
               final isWide = c.maxWidth >= 900;
               if (!isWide) {
-                // Lista (móvil/tablet)
                 return ListView.separated(
                   itemCount: _filtered.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
@@ -179,19 +177,25 @@ class _UsersWidgetState extends State<UsersWidget> {
                         '${u.email}\n${u.roles.map((r) => r.replaceAll("ROLE_", "")).join(", ")}',
                       ),
                       isThreeLine: true,
-                      onTap: widget.onUserTap != null
-                          ? () => widget.onUserTap!(u)
-                          : null,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfileScreen(
+                              username: u.username,
+                            ), 
+                          ),
+                        );
+                      },
                       trailing: const Icon(Icons.chevron_right),
                     );
                   },
                 );
               } else {
-                // Grilla (desktop)
                 final cols = (c.maxWidth ~/ 280).clamp(
                   2,
                   6,
-                ); // 280px por tarjeta aprox.
+                ); 
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

@@ -1,4 +1,4 @@
-// lib/widgets/create_user_dialog.dart
+
 import 'package:flutter/material.dart';
 import 'package:front_2/service/userapi.dart';
 
@@ -15,7 +15,7 @@ class _CreateUserDialogState extends State<CreateUserDialog> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _pass2 = TextEditingController();
-  final _roleIds = TextEditingController(); // opcional: "1,2,3"
+  final _roleIds = TextEditingController(); 
   bool _loading = false;
   String? _error;
 
@@ -98,7 +98,6 @@ class _CreateUserDialogState extends State<CreateUserDialog> {
                 validator: (v) => (v != _pass.text) ? 'No coincide' : null,
               ),
               const SizedBox(height: 10),
-              // Opcional: IDs de rol separados por coma
               TextFormField(
                 controller: _roleIds,
                 decoration: const InputDecoration(

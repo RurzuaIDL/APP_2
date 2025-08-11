@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class DashboardView extends StatelessWidget {
@@ -5,53 +6,88 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-    final kpis = const [
-      _KpiData(title: 'Usuarios', value: '1,248', delta: '+3.2%'),
-      _KpiData(title: 'Ventas', value: '\$12.4k', delta: '+1.1%'),
-      _KpiData(title: 'Tickets', value: '87', delta: '-4.0%'),
-      _KpiData(title: 'Conversión', value: '2.7%', delta: '+0.3%'),
-    ];
-
     return LayoutBuilder(
       builder: (context, c) {
-        final isWide = c.maxWidth > 1000;
-        final isTablet = c.maxWidth > 700 && c.maxWidth <= 1000;
+        final w = c.maxWidth;
+        final isXS = w < 480;
+        final isSM = w >= 480 && w < 720;
+        final isWide = w >= 720; 
+
+
+        final sparkHeight = isXS ? 90.0 : (isSM ? 110.0 : 120.0);
+
+
+        final kpis = const [
+          _KpiData(title: 'Usuarios', value: '1,248', delta: '+3.2%'),
+          _KpiData(title: 'Ventas', value: '\$12.4k', delta: '+1.1%'),
+        ];
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.symmetric(
+            horizontal: isXS ? 12 : 16,
+            vertical: 16,
+          ),
           child: Column(
             children: [
-              // 🔹 KPIs
+         
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: kpis.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isWide ? 4 : (isTablet ? 3 : 2),
+                  crossAxisCount: isWide ? 2 : 1,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 14 / 6,
+                  childAspectRatio: isXS ? 14 / 7 : 14 / 6,
                 ),
                 itemBuilder: (_, i) => _KpiCard(data: kpis[i]),
               ),
               const SizedBox(height: 16),
 
-              // 🔹 “Sparkline” + Progreso
-              Flex(
-                direction: isTablet || isWide ? Axis.horizontal : Axis.vertical,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _SectionCard(
-                      title: 'Tráfico últimos 7 días',
-                      child: const _MiniSparkline(values: [8, 12, 10, 14, 18, 13, 20]),
+             
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: _SectionCard(
+                        title: 'Tráfico últimos 7 días',
+                        child: _MiniSparkline(
+                          values: const [8, 12, 10, 14, 18, 13, 20],
+                          height: sparkHeight,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16, height: 16),
-                  Expanded(
-                    child: _SectionCard(
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _SectionCard(
+                        title: 'Progreso de tareas',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            _ProgressRow(label: 'Backend', value: 0.75),
+                            _ProgressRow(label: 'Frontend', value: 0.55),
+                            _ProgressRow(label: 'QA', value: 0.32),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionCard(
+                      title: 'Tráfico últimos 7 días',
+                      child: _MiniSparkline(
+                        values: const [8, 12, 10, 14, 18, 13, 20],
+                        height: sparkHeight,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
                       title: 'Progreso de tareas',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,9 +98,8 @@ class DashboardView extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 16),
 
               _SectionCard(
@@ -72,9 +107,9 @@ class DashboardView extends StatelessWidget {
                 trailing: TextButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Actualizar'),
+                  label: const Text(''),
                 ),
-                child: const _RecentActivityTable(),
+                child: _RecentActivityResponsive(isCompact: isXS || isSM),
               ),
             ],
           ),
@@ -102,7 +137,10 @@ class _KpiCard extends StatelessWidget {
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Theme.of(context).dividerColor)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Theme.of(context).dividerColor),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -113,7 +151,14 @@ class _KpiCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(data.value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text(
+                    data.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -123,13 +168,14 @@ class _KpiCard extends StatelessWidget {
                     border: Border.all(color: color.withOpacity(.25)),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(up ? Icons.trending_up : Icons.trending_down, size: 16, color: color),
                       const SizedBox(width: 4),
                       Text(data.delta, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ],
@@ -149,7 +195,10 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Theme.of(context).dividerColor)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Theme.of(context).dividerColor),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -171,18 +220,18 @@ class _SectionCard extends StatelessWidget {
 
 class _MiniSparkline extends StatelessWidget {
   final List<num> values;
-  const _MiniSparkline({required this.values});
+  final double height;
+  const _MiniSparkline({required this.values, this.height = 120});
 
   @override
   Widget build(BuildContext context) {
-    // Normaliza valores para dibujar barras simples
     final maxVal = (values.isEmpty ? 1 : values.reduce((a, b) => a > b ? a : b)).toDouble();
     return SizedBox(
-      height: 120,
+      height: height,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: values.map((v) {
-          final h = maxVal == 0 ? 0.0 : (v.toDouble() / maxVal) * 110;
+          final h = maxVal == 0 ? 0.0 : (v.toDouble() / maxVal) * (height - 10);
           return Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -229,18 +278,40 @@ class _ProgressRow extends StatelessWidget {
   }
 }
 
-class _RecentActivityTable extends StatelessWidget {
-  const _RecentActivityTable();
+class _RecentActivityResponsive extends StatelessWidget {
+  final bool isCompact;
+  const _RecentActivityResponsive({required this.isCompact});
 
   @override
   Widget build(BuildContext context) {
-    final rows = const [
+    const rows = [
       ['#10234', 'Nuevo usuario', 'hoy 12:30'],
       ['#10233', 'Pago recibido', 'ayer 18:04'],
       ['#10232', 'Ticket asignado', 'ayer 11:27'],
       ['#10231', 'Build desplegado', 'ayer 09:12'],
     ];
 
+    if (isCompact) {
+      // Lista en pantallas angostas
+      return ListView.separated(
+        itemCount: rows.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (_, i) {
+          final r = rows[i];
+          return ListTile(
+            dense: true,
+            leading: Text(r[0], style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(r[1]),
+            trailing: Text(r[2]),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          );
+        },
+      );
+    }
+
+    // DataTable en pantallas anchas
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -250,13 +321,11 @@ class _RecentActivityTable extends StatelessWidget {
           DataColumn(label: Text('Fecha')),
         ],
         rows: rows
-            .map(
-              (r) => DataRow(cells: [
-                DataCell(Text(r[0])),
-                DataCell(Text(r[1])),
-                DataCell(Text(r[2])),
-              ]),
-            )
+            .map((r) => DataRow(cells: [
+                  DataCell(Text(r[0])),
+                  DataCell(Text(r[1])),
+                  DataCell(Text(r[2])),
+                ]))
             .toList(),
       ),
     );

@@ -13,7 +13,7 @@ class TablaConFiltro extends StatefulWidget {
 class _TablaConFiltroState extends State<TablaConFiltro> {
   final TextEditingController _controller = TextEditingController();
 
-  // TODO: reemplazar por data remota
+
   final List<Map<String, String>> _datos = const [
     {'Nombre': 'Juan Pérez', 'Correo': 'juan@example.com'},
     {'Nombre': 'María López', 'Correo': 'maria@example.com'},
@@ -22,14 +22,12 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
   ];
 
   String _filtro = '';
-  final Set<int> _selected = <int>{}; // índices de _datos
+  final Set<int> _selected = <int>{}; 
 
   List<MapEntry<int, Map<String, String>>> get _filtradosConIndice {
     return _datos.asMap().entries.where((e) {
       if (_filtro.isEmpty) return true;
-      return e.value.values.any(
-        (v) => v.toLowerCase().contains(_filtro.toLowerCase()),
-      );
+      return e.value.values.any((v) => v.toLowerCase().contains(_filtro.toLowerCase()));
     }).toList();
   }
 
@@ -53,19 +51,19 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
     }
 
     final excel = Excel.createExcel();
-
-    // Renombrar la hoja por defecto
     final defaultSheetName = excel.getDefaultSheet();
     if (defaultSheetName != null) {
       excel.rename(defaultSheetName, 'Seleccion');
     }
-
     final sheet = excel['Seleccion'];
 
-    // Encabezados
-    sheet.appendRow([TextCellValue('Nombre'), TextCellValue('Correo')]);
+    
+    sheet.appendRow([
+      TextCellValue('Nombre'),
+      TextCellValue('Correo'),
+    ]);
 
-    // Filas seleccionadas
+
     for (var i = 0; i < _datos.length; i++) {
       if (_selected.contains(i)) {
         final fila = _datos[i];
@@ -76,7 +74,6 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
       }
     }
 
-    // Guardar
     final bytes = Uint8List.fromList(excel.encode()!);
     await FileSaver.instance.saveFile(
       name: 'seleccion',
@@ -94,16 +91,9 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
   Widget build(BuildContext context) {
     final filtrados = _filtradosConIndice;
 
-    // Estado del "seleccionar todo" según lo filtrado
-    final allFilteredSelected =
-        filtrados.isNotEmpty &&
-        filtrados.every((e) => _selected.contains(e.key));
-    final someFilteredSelected = filtrados.any(
-      (e) => _selected.contains(e.key),
-    );
-    final selectAllValue = allFilteredSelected
-        ? true
-        : (someFilteredSelected ? null : false);
+    final allFilteredSelected = filtrados.isNotEmpty && filtrados.every((e) => _selected.contains(e.key));
+    final someFilteredSelected = filtrados.any((e) => _selected.contains(e.key));
+    final selectAllValue = allFilteredSelected ? true : (someFilteredSelected ? null : false);
 
     return Center(
       child: ConstrainedBox(
@@ -117,10 +107,12 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                // 🔍 Búsqueda + Exportar
-                Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 600;
+
+                
+                final header = Row(
                   children: [
                     Expanded(
                       child: TextField(
@@ -139,71 +131,128 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
                               : null,
                           border: const OutlineInputBorder(),
                         ),
-                        onChanged: (valor) =>
-                            setState(() => _filtro = valor.trim()),
+                        onChanged: (v) => setState(() => _filtro = v.trim()),
                       ),
                     ),
                     const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: _exportSelectedToExcel,
                       icon: const Icon(Icons.download),
-                      label: const Text('Exportar a Excel'),
+                      label: const Text('Excel'),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
+                );
 
-                // 📋 Tabla: ocupa todo el ancho del Card, solo scroll vertical
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                      width: double.infinity, // 👈 se adapta al ancho del Card
-                      child: DataTable(
-                        columnSpacing: 24,
-                        columns: [
-                          DataColumn(
-                            label: Checkbox(
+                if (isCompact) {
+                  return Column(
+                    children: [
+                      header,
+                      const SizedBox(height: 12),
+
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
                               value: selectAllValue,
                               tristate: true,
                               onChanged: _toggleSelectAll,
                             ),
-                          ),
-                          const DataColumn(label: Text('Nombre')),
-                          const DataColumn(label: Text('Correo')),
-                        ],
-                        rows: filtrados.map((entry) {
-                          final idx = entry.key;
-                          final fila = entry.value;
-                          final isSelected = _selected.contains(idx);
-
-                          return DataRow(
-                            // importante: NO usamos onSelectChanged => solo el checkbox controla
-                            selected: isSelected,
-                            cells: [
-                              DataCell(
-                                Checkbox(
-                                  value: isSelected,
-                                  onChanged: (v) {
-                                    setState(() {
-                                      if (v == true) {
-                                        _selected.add(idx);
-                                      } else {
-                                        _selected.remove(idx);
-                                      }
-                                    });
-                                  },
-                                ),
-                              ),
-                              DataCell(Text(fila['Nombre'] ?? '')),
-                              DataCell(Text(fila['Correo'] ?? '')),
-                            ],
-                          );
-                        }).toList(),
+                            const Text('Seleccionar todo'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ],
+
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: filtrados.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (_, i) {
+                            final idx = filtrados[i].key;
+                            final fila = filtrados[i].value;
+                            final isSelected = _selected.contains(idx);
+
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              leading: Checkbox(
+                                value: isSelected,
+                                onChanged: (v) {
+                                  setState(() {
+                                    if (v == true) {
+                                      _selected.add(idx);
+                                    } else {
+                                      _selected.remove(idx);
+                                    }
+                                  });
+                                },
+                              ),
+                              title: Text(fila['Nombre'] ?? ''),
+                              subtitle: Text(fila['Correo'] ?? ''),
+                              dense: true,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      header,
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: DataTable(
+                              columnSpacing: 24,
+                              columns: [
+                                DataColumn(
+                                  label: Checkbox(
+                                    value: selectAllValue,
+                                    tristate: true,
+                                    onChanged: _toggleSelectAll,
+                                  ),
+                                ),
+                                const DataColumn(label: Text('Nombre')),
+                                const DataColumn(label: Text('Correo')),
+                              ],
+                              rows: filtrados.map((entry) {
+                                final idx = entry.key;
+                                final fila = entry.value;
+                                final isSelected = _selected.contains(idx);
+                                return DataRow(
+                                  selected: isSelected,
+                                  cells: [
+                                    DataCell(
+                                      Checkbox(
+                                        value: isSelected,
+                                        onChanged: (v) {
+                                          setState(() {
+                                            if (v == true) {
+                                              _selected.add(idx);
+                                            } else {
+                                              _selected.remove(idx);
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    DataCell(Text(fila['Nombre'] ?? '')),
+                                    DataCell(Text(fila['Correo'] ?? '')),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ),
         ),
