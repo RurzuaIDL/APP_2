@@ -292,7 +292,6 @@ class _RecentActivityResponsive extends StatelessWidget {
     ];
 
     if (isCompact) {
-      // Lista en pantallas angostas
       return ListView.separated(
         itemCount: rows.length,
         shrinkWrap: true,

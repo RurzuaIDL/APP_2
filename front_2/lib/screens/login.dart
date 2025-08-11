@@ -41,11 +41,15 @@ class _Logo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FlutterLogo(size: isSmallScreen ? 100 : 200),
+        Image.asset(
+          'assets/icons/Logo.png',
+          height: isSmallScreen ? 100 : 200,
+          fit: BoxFit.contain,
+        ),
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            "Welcome!",
+            "Bienvenido!",
             textAlign: TextAlign.center,
             style: isSmallScreen
                 ? Theme.of(context).textTheme.titleMedium
@@ -56,6 +60,7 @@ class _Logo extends StatelessWidget {
     );
   }
 }
+
 
 class _FormContent extends StatefulWidget {
   const _FormContent();
@@ -142,8 +147,8 @@ class __FormContentState extends State<_FormContent> {
             TextFormField(
               controller: _loginController,
               decoration: const InputDecoration(
-                labelText: 'Username or Email',
-                hintText: 'Enter your username or email',
+                labelText: 'Usuario',
+                hintText: 'Ingresa tu Usuario',
                 prefixIcon: Icon(Icons.person_outline),
                 border: OutlineInputBorder(),
               ),
@@ -151,7 +156,7 @@ class __FormContentState extends State<_FormContent> {
               autofillHints: const [AutofillHints.username, AutofillHints.email],
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your username or email';
+                  return 'Por favor ingresa tu Usuario';
                 }
                 return null; 
               },
@@ -161,8 +166,8 @@ class __FormContentState extends State<_FormContent> {
               controller: _passwordController,
               obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
-                labelText: 'Password',
-                hintText: 'Enter your password',
+                labelText: 'Contraseña',
+                hintText: 'Ingresa tu Contraseña',
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -177,10 +182,10 @@ class __FormContentState extends State<_FormContent> {
               onFieldSubmitted: (_) => _login(),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
+                  return 'Por favor ingresa tu Contraseña';
                 }
                 if (value.length < 6) {
-                  return 'Password must be at least 6 characters';
+                  return 'Por favor ingresa tu Contraseña';
                 }
                 return null;
               },
@@ -189,7 +194,7 @@ class __FormContentState extends State<_FormContent> {
             CheckboxListTile(
               value: _rememberMe,
               onChanged: (v) => setState(() => _rememberMe = v ?? false),
-              title: const Text('Remember me'),
+              title: const Text('Recordar'),
               controlAffinity: ListTileControlAffinity.leading,
               dense: true,
               contentPadding: const EdgeInsets.all(0),

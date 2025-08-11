@@ -13,7 +13,6 @@ class TablaConFiltro extends StatefulWidget {
 class _TablaConFiltroState extends State<TablaConFiltro> {
   final TextEditingController _controller = TextEditingController();
 
-
   final List<Map<String, String>> _datos = const [
     {'Nombre': 'Juan Pérez', 'Correo': 'juan@example.com'},
     {'Nombre': 'María López', 'Correo': 'maria@example.com'},
@@ -22,12 +21,14 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
   ];
 
   String _filtro = '';
-  final Set<int> _selected = <int>{}; 
+  final Set<int> _selected = <int>{};
 
   List<MapEntry<int, Map<String, String>>> get _filtradosConIndice {
     return _datos.asMap().entries.where((e) {
       if (_filtro.isEmpty) return true;
-      return e.value.values.any((v) => v.toLowerCase().contains(_filtro.toLowerCase()));
+      return e.value.values.any(
+        (v) => v.toLowerCase().contains(_filtro.toLowerCase()),
+      );
     }).toList();
   }
 
@@ -57,12 +58,7 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
     }
     final sheet = excel['Seleccion'];
 
-    
-    sheet.appendRow([
-      TextCellValue('Nombre'),
-      TextCellValue('Correo'),
-    ]);
-
+    sheet.appendRow([TextCellValue('Nombre'), TextCellValue('Correo')]);
 
     for (var i = 0; i < _datos.length; i++) {
       if (_selected.contains(i)) {
@@ -91,9 +87,15 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
   Widget build(BuildContext context) {
     final filtrados = _filtradosConIndice;
 
-    final allFilteredSelected = filtrados.isNotEmpty && filtrados.every((e) => _selected.contains(e.key));
-    final someFilteredSelected = filtrados.any((e) => _selected.contains(e.key));
-    final selectAllValue = allFilteredSelected ? true : (someFilteredSelected ? null : false);
+    final allFilteredSelected =
+        filtrados.isNotEmpty &&
+        filtrados.every((e) => _selected.contains(e.key));
+    final someFilteredSelected = filtrados.any(
+      (e) => _selected.contains(e.key),
+    );
+    final selectAllValue = allFilteredSelected
+        ? true
+        : (someFilteredSelected ? null : false);
 
     return Center(
       child: ConstrainedBox(
@@ -111,7 +113,6 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
               builder: (context, constraints) {
                 final isCompact = constraints.maxWidth < 600;
 
-                
                 final header = Row(
                   children: [
                     Expanded(
@@ -137,7 +138,10 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
                     const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: _exportSelectedToExcel,
-                      icon: const Icon(Icons.download),
+                      icon: Image.asset(
+                        'assets/icons/excel-icon.png',
+                        height: 20,
+                      ),
                       label: const Text('Excel'),
                     ),
                   ],
@@ -175,7 +179,10 @@ class _TablaConFiltroState extends State<TablaConFiltro> {
                             final isSelected = _selected.contains(idx);
 
                             return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
                               leading: Checkbox(
                                 value: isSelected,
                                 onChanged: (v) {

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:front_2/widgets/dashboard_view.dart';
 import 'package:front_2/widgets/profile.dart';
@@ -18,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _displayName = 'Guest';
   List<String> _roles = const [];
   int _selectedIndex = 0;
-  bool _railOpen = true; 
+  bool _railOpen = true;
 
   final _titles = const ['Dashboard', 'Table', 'Messages', 'Team', 'Settings'];
 
@@ -64,32 +63,49 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _onDestinationSelected(int index) => setState(() => _selectedIndex = index);
+  void _onDestinationSelected(int index) =>
+      setState(() => _selectedIndex = index);
 
   Widget _buildPage(int index) {
     switch (index) {
-      case 0: return const DashboardView();
-      case 1: return const TablaConFiltro();
-      case 2: return const Center(child: Text('Messages'));
-      case 3: return const UsersWidget();
-      case 4: return const Center(child: Text('Settings'));
-      default: return const Center(child: Text('No encontrado'));
+      case 0:
+        return const DashboardView();
+      case 1:
+        return const TablaConFiltro();
+      case 2:
+        return const Center(child: Text('Messages'));
+      case 3:
+        return const UsersWidget();
+      case 4:
+        return const Center(child: Text('Settings'));
+      default:
+        return const Center(child: Text('No encontrado'));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final safeIndex = (_selectedIndex >= 0 && _selectedIndex < _titles.length) ? _selectedIndex : 0;
+    final safeIndex = (_selectedIndex >= 0 && _selectedIndex < _titles.length)
+        ? _selectedIndex
+        : 0;
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: Text(_titles[safeIndex]),
-        leading: IconButton( 
-          tooltip: _railOpen ? 'Ocultar menú' : 'Mostrar menú',
-          icon: Icon(_railOpen ? Icons.menu_open : Icons.menu),
-          onPressed: () => setState(() => _railOpen = !_railOpen),
+        leading: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: IconButton(
+            tooltip: _railOpen ? 'Ocultar menú' : 'Mostrar menú',
+            icon: SizedBox(
+              height: 32,
+              width: 32,
+              child: Image.asset('assets/icons/Logo.png', fit: BoxFit.contain),
+            ),
+            onPressed: () => setState(() => _railOpen = !_railOpen),
+          ),
         ),
+
         actions: [
           Tooltip(
             message: _roles.isEmpty
@@ -116,15 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
-                  children: [
+                  children: const [
                     CircleAvatar(
                       radius: 16,
-                      child: Text(_displayName.isNotEmpty ? _displayName[0].toUpperCase() : '?'),
+                      child: Icon(Icons.person, size: 18),
                     ),
-                    const SizedBox(width: 8),
-                    Text(_displayName, style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down),
+                    SizedBox(width: 4),
                   ],
                 ),
               ),
@@ -148,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           roles: _roles,
                           selectedIndex: safeIndex,
                           onSelect: _onDestinationSelected,
-                          onCollapse: () => setState(() => _railOpen = false), 
+                          onCollapse: () => setState(() => _railOpen = false),
                         ),
                         const VerticalDivider(width: 1),
                       ],
@@ -156,7 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   : const SizedBox.shrink(key: ValueKey('rail-closed')),
             ),
 
-           
             Expanded(child: _buildPage(safeIndex)),
           ],
         ),
