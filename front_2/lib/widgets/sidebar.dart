@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:front_2/service/auth_service.dart';
 
@@ -25,6 +24,7 @@ class CustomNavigationRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Autocolapso solo por tamaño de pantalla
         if (constraints.maxWidth < _collapseBreakpoint) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             onCollapse();
@@ -58,6 +58,11 @@ class CustomNavigationRail extends StatelessWidget {
             selectedIcon: Icon(Icons.settings),
             label: Text('Settings'),
           ),
+          NavigationRailDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: Text('Pallet Quality'),
+          ),
         ];
 
         return SizedBox(
@@ -68,14 +73,11 @@ class CustomNavigationRail extends StatelessWidget {
               child: Column(
                 children: [
                   const Divider(height: 1),
-
-        
                   Expanded(
                     child: NavigationRail(
                       selectedIndex: selectedIndex,
                       onDestinationSelected: (index) {
-                        onSelect(index);     
-                        onCollapse();      
+                        onSelect(index); // ✅ no colapsar aquí
                       },
                       extended: false,
                       minWidth: _railWidth,
@@ -85,8 +87,6 @@ class CustomNavigationRail extends StatelessWidget {
                       destinations: destinations,
                     ),
                   ),
-
-
                   const Divider(height: 1),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),

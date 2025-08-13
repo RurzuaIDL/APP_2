@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:front_2/widgets/dashboard_view.dart';
+import 'package:front_2/widgets/pallet_quality.dart';
 import 'package:front_2/widgets/profile.dart';
 import 'package:front_2/widgets/tabla_con_filtro.dart';
 import 'package:front_2/widgets/sidebar.dart';
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   bool _railOpen = true;
 
-  final _titles = const ['Dashboard', 'Table', 'Messages', 'Team', 'Settings'];
+  final _titles = const ['Dashboard', 'Table', 'Messages', 'Team', 'Settings', 'Pallet Quallity'];
 
   @override
   void initState() {
@@ -78,8 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
         return const UsersWidget();
       case 4:
         return const Center(child: Text('Settings'));
+      case 5:
+        return const GateSearchGrid ();
       default:
         return const Center(child: Text('No encontrado'));
+        
     }
   }
 
@@ -168,7 +172,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : const SizedBox.shrink(key: ValueKey('rail-closed')),
             ),
-
             Expanded(child: _buildPage(safeIndex)),
           ],
         ),
@@ -176,3 +179,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+  

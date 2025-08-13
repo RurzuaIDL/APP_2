@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:front_2/service/userapi.dart';
+import 'package:front_2/service/user_service.dart';
 
 class CreateUserDialog extends StatefulWidget {
   const CreateUserDialog({super.key});

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class DashboardView extends StatelessWidget {
@@ -11,16 +10,63 @@ class DashboardView extends StatelessWidget {
         final w = c.maxWidth;
         final isXS = w < 480;
         final isSM = w >= 480 && w < 720;
-        final isWide = w >= 720; 
+        final isWide = w >= 720;
 
+
+        final inspections7d = const [42, 38, 40, 45, 39, 50, 47];
+        final rejected7d   = const [ 3,  4,  5,  6,  4,  7,  5];
+
+        final todayInspections = inspections7d.last;
+        final yesterdayInspections = inspections7d[inspections7d.length - 2];
+        final todayRejected = rejected7d.last;
+        final yesterdayRejected = rejected7d[rejected7d.length - 2];
+
+        double safeRate(int ok, int total) => total == 0 ? 0 : ok / total;
+        final approvalToday = safeRate(todayInspections - todayRejected, todayInspections);
+        final approvalYesterday = safeRate(yesterdayInspections - yesterdayRejected, yesterdayInspections);
+
+        String signedPercent(double frac) {
+          final v = (frac * 100);
+          final s = v >= 0 ? '+' : '';
+          return '$s${v.toStringAsFixed(1)}%';
+        }
+        double change(num curr, num prev) => (prev == 0) ? 0 : (curr - prev) / prev;
+
+
+        final defectDist = const {
+          'Golpes': 32,
+          'Humedad': 21,
+          'Clavos expuestos': 17,
+          'Manchas': 11,
+        };
+        final totalDefects = defectDist.values.fold<int>(0, (a, b) => a + b);
+        double defectFraction(String k) =>
+            totalDefects == 0 ? 0 : (defectDist[k]! / totalDefects);
+
+        final recentInspections = const [
+          ['PL-1045', 'OK',   'hoy 12:30'],
+          ['PL-1044', 'RECH', 'hoy 11:18'],
+          ['PL-1043', 'OK',   'ayer 18:04'],
+          ['PL-1042', 'OK',   'ayer 16:29'],
+          ['PL-1041', 'RECH', 'ayer 11:27'],
+          ['PL-1040', 'OK',   'ayer 09:12'],
+        ];
+
+
+        final kpis = [
+          _KpiData(
+            title: 'Inspecciones (hoy)',
+            value: '$todayInspections',
+            delta: signedPercent(change(todayInspections, yesterdayInspections)),
+          ),
+          _KpiData(
+            title: 'Aprobación (hoy)',
+            value: '${(approvalToday * 100).toStringAsFixed(1)}%',
+            delta: signedPercent(change(approvalToday, approvalYesterday)),
+          ),
+        ];
 
         final sparkHeight = isXS ? 90.0 : (isSM ? 110.0 : 120.0);
-
-
-        final kpis = const [
-          _KpiData(title: 'Usuarios', value: '1,248', delta: '+3.2%'),
-          _KpiData(title: 'Ventas', value: '\$12.4k', delta: '+1.1%'),
-        ];
 
         return SingleChildScrollView(
           padding: EdgeInsets.symmetric(
@@ -29,7 +75,7 @@ class DashboardView extends StatelessWidget {
           ),
           child: Column(
             children: [
-         
+  
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -44,7 +90,7 @@ class DashboardView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-             
+  
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,9 +98,9 @@ class DashboardView extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: _SectionCard(
-                        title: 'Tráfico últimos 7 días',
+                        title: 'Inspecciones últimos 7 días',
                         child: _MiniSparkline(
-                          values: const [8, 12, 10, 14, 18, 13, 20],
+                          values: inspections7d.map((e) => e as num).toList(),
                           height: sparkHeight,
                         ),
                       ),
@@ -62,13 +108,14 @@ class DashboardView extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _SectionCard(
-                        title: 'Progreso de tareas',
+                        title: 'Top defectos',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            _ProgressRow(label: 'Backend', value: 0.75),
-                            _ProgressRow(label: 'Frontend', value: 0.55),
-                            _ProgressRow(label: 'QA', value: 0.32),
+                          children: [
+                            _ProgressRow(label: 'Golpes', value: defectFraction('Golpes')),
+                            _ProgressRow(label: 'Humedad', value: defectFraction('Humedad')),
+                            _ProgressRow(label: 'Clavos expuestos', value: defectFraction('Clavos expuestos')),
+                            _ProgressRow(label: 'Manchas', value: defectFraction('Manchas')),
                           ],
                         ),
                       ),
@@ -80,21 +127,22 @@ class DashboardView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _SectionCard(
-                      title: 'Tráfico últimos 7 días',
+                      title: 'Ultimos 7 días',
                       child: _MiniSparkline(
-                        values: const [8, 12, 10, 14, 18, 13, 20],
+                        values: inspections7d.map((e) => e as num).toList(),
                         height: sparkHeight,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _SectionCard(
-                      title: 'Progreso de tareas',
+                      title: 'Top defectos',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          _ProgressRow(label: 'Backend', value: 0.75),
-                          _ProgressRow(label: 'Frontend', value: 0.55),
-                          _ProgressRow(label: 'QA', value: 0.32),
+                        children: [
+                          _ProgressRow(label: 'Golpes', value: defectFraction('Golpes')),
+                          _ProgressRow(label: 'Humedad', value: defectFraction('Humedad')),
+                          _ProgressRow(label: 'Clavos expuestos', value: defectFraction('Clavos expuestos')),
+                          _ProgressRow(label: 'Manchas', value: defectFraction('Manchas')),
                         ],
                       ),
                     ),
@@ -103,13 +151,16 @@ class DashboardView extends StatelessWidget {
               const SizedBox(height: 16),
 
               _SectionCard(
-                title: 'Actividad reciente',
+                title: 'Inspecciones',
                 trailing: TextButton.icon(
-                  onPressed: () {},
+                  onPressed: () {}, 
                   icon: const Icon(Icons.refresh),
                   label: const Text(''),
                 ),
-                child: _RecentActivityResponsive(isCompact: isXS || isSM),
+                child: _RecentInspectionsResponsive(
+                  isCompact: isXS || isSM,
+                  rows: recentInspections,
+                ),
               ),
             ],
           ),
@@ -118,6 +169,7 @@ class DashboardView extends StatelessWidget {
     );
   }
 }
+
 
 class _KpiData {
   final String title;
@@ -278,19 +330,41 @@ class _ProgressRow extends StatelessWidget {
   }
 }
 
-class _RecentActivityResponsive extends StatelessWidget {
+
+class _RecentInspectionsResponsive extends StatelessWidget {
   final bool isCompact;
-  const _RecentActivityResponsive({required this.isCompact});
+  final List<List<String>> rows;
+  const _RecentInspectionsResponsive({required this.isCompact, required this.rows});
+
+  Color _statusColor(BuildContext ctx, String status) {
+    switch (status.toUpperCase()) {
+      case 'OK':
+        return Colors.green;
+      case 'RECH':
+        return Colors.red;
+      default:
+        return Theme.of(ctx).colorScheme.primary;
+    }
+  }
+
+  Widget _statusChip(BuildContext ctx, String status) {
+    final c = _statusColor(ctx, status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: c.withOpacity(.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.withOpacity(.35)),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: c, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    const rows = [
-      ['#10234', 'Nuevo usuario', 'hoy 12:30'],
-      ['#10233', 'Pago recibido', 'ayer 18:04'],
-      ['#10232', 'Ticket asignado', 'ayer 11:27'],
-      ['#10231', 'Build desplegado', 'ayer 09:12'],
-    ];
-
     if (isCompact) {
       return ListView.separated(
         itemCount: rows.length,
@@ -302,7 +376,7 @@ class _RecentActivityResponsive extends StatelessWidget {
           return ListTile(
             dense: true,
             leading: Text(r[0], style: const TextStyle(fontWeight: FontWeight.w600)),
-            title: Text(r[1]),
+            title: _statusChip(context, r[1]),
             trailing: Text(r[2]),
             contentPadding: const EdgeInsets.symmetric(horizontal: 8),
           );
@@ -310,19 +384,19 @@ class _RecentActivityResponsive extends StatelessWidget {
       );
     }
 
-    // DataTable en pantallas anchas
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
         columns: const [
-          DataColumn(label: Text('ID')),
-          DataColumn(label: Text('Evento')),
+          DataColumn(label: Text('Pallet')),
+          DataColumn(label: Text('Estado')),
           DataColumn(label: Text('Fecha')),
         ],
         rows: rows
             .map((r) => DataRow(cells: [
                   DataCell(Text(r[0])),
-                  DataCell(Text(r[1])),
+                  DataCell(_statusChip(context, r[1])),
                   DataCell(Text(r[2])),
                 ]))
             .toList(),

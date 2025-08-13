@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:front_2/models/user_model.dart';
-import 'package:front_2/service/userapi.dart';
+import 'package:front_2/service/user_service.dart';
 import 'package:front_2/widgets/create_dialog_user.dart';
 import 'package:front_2/widgets/profile.dart';
 
