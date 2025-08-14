@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:front_2/widgets/pallet_quality_details.dart';
 
 class GateSearchGrid extends StatefulWidget {
   const GateSearchGrid({
@@ -22,6 +23,19 @@ class _GateSearchGridState extends State<GateSearchGrid> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _openDetails(BuildContext context, GateItem it) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PalletQualityDetails(
+          dt: it.dt,
+          cliente: it
+              .origen, // usa "origen" como cliente (o cámbialo si tienes 'cliente' real)
+          puerta: it.puerta,
+        ),
+      ),
+    );
   }
 
   List<GateItem> get _filtered {
@@ -59,7 +73,7 @@ class _GateSearchGridState extends State<GateSearchGrid> {
         // ---- Fix robusto: calculamos childAspectRatio en lugar de altura fija ----
         // Ancho real del tile considerando padding y gutters del Grid.
         const gridHPad = 16.0; // padding horizontal del GridView
-        const gutter = 12.0;   // spacing entre columnas
+        const gutter = 12.0; // spacing entre columnas
         final horizontalPadding = gridHPad * 2;
         final gutters = gutter * (crossAxisCount - 1);
         final tileWidth = (w - horizontalPadding - gutters) / crossAxisCount;
@@ -67,7 +81,9 @@ class _GateSearchGridState extends State<GateSearchGrid> {
         // Altura mínima razonable de la card (según tipografía y compactación)
         final textScale = MediaQuery.textScaleFactorOf(context);
         final minCardHeight =
-            (isXS ? 128.0 : 118.0) + (textScale - 1.0) * 24.0 + 2.0; // +2px anti-redondeo
+            (isXS ? 128.0 : 118.0) +
+            (textScale - 1.0) * 24.0 +
+            2.0; // +2px anti-redondeo
         final ratio = tileWidth / minCardHeight;
 
         // ---- Slice de la página actual ----
@@ -75,8 +91,9 @@ class _GateSearchGridState extends State<GateSearchGrid> {
         final endExclusive = (start + _pageSize) > results.length
             ? results.length
             : (start + _pageSize);
-        final pageItems =
-            (results.isEmpty || start >= results.length) ? const <GateItem>[] : results.sublist(start, endExclusive);
+        final pageItems = (results.isEmpty || start >= results.length)
+            ? const <GateItem>[]
+            : results.sublist(start, endExclusive);
 
         final totalPages = _pageCountFor(results.length);
         final showPager = results.isNotEmpty && totalPages > 1;
@@ -147,17 +164,23 @@ class _GateSearchGridState extends State<GateSearchGrid> {
                           child: GridView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                             itemCount: pageItems.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: gutter,
-                              mainAxisSpacing: gutter,
-                              childAspectRatio: ratio, // evita desbordes por redondeo
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: gutter,
+                                  mainAxisSpacing: gutter,
+                                  childAspectRatio:
+                                      ratio, // evita desbordes por redondeo
+                                ),
+
+                            itemBuilder: (context, i) => _GateCard(
+                              item: pageItems[i],
+                              onTap: () => _openDetails(context, pageItems[i]),
                             ),
-                            itemBuilder: (context, i) => _GateCard(item: pageItems[i]),
                           ),
                         ),
 
-                        // Paginador responsive
+                        // Paginador responsiveS
                         if (showPager)
                           _PaginationBar(
                             page: _page,
@@ -323,11 +346,10 @@ class GateItem {
 }
 
 /* ---------------------- Card (con hover) ---------------------- */
-
 class _GateCard extends StatefulWidget {
-  const _GateCard({required this.item});
-
+  const _GateCard({required this.item, this.onTap});
   final GateItem item;
+  final VoidCallback? onTap;
 
   @override
   State<_GateCard> createState() => _GateCardState();
@@ -341,7 +363,10 @@ class _GateCardState extends State<_GateCard> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final baseColor = theme.cardColor;
-    final hoverTint = Color.alphaBlend(scheme.primary.withOpacity(0.05), baseColor);
+    final hoverTint = Color.alphaBlend(
+      scheme.primary.withOpacity(0.05),
+      baseColor,
+    );
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -373,13 +398,14 @@ class _GateCardState extends State<_GateCard> {
                 ],
         ),
         child: Card(
-          elevation: 0, // la sombra la maneja el AnimatedContainer
+          elevation: 0,
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           color: _hover ? hoverTint : baseColor,
           child: InkWell(
-            onTap: () {
-            },
+            onTap: widget.onTap,
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -399,7 +425,8 @@ class _GateCardState extends State<_GateCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+
                   // Origen
                   Row(
                     children: [
@@ -414,7 +441,8 @@ class _GateCardState extends State<_GateCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+
                   // Puerta
                   Row(
                     children: [
@@ -452,18 +480,17 @@ const demoGateItems = <GateItem>[
   GateItem(dt: 'DT-1008', origen: 'Puerto Seco', puerta: 'C5'),
   GateItem(dt: 'DT-1009', origen: 'Depósito Central', puerta: 'D2'),
   GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-    GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-      GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-        GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-          GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-            GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-              GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
-
+  GateItem(dt: 'DT-1011', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1012', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1013', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1014', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1015', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1016', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1017', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1018', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1019', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1020', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1021', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1022', origen: 'Bodega Oeste', puerta: 'E4'),
+  GateItem(dt: 'DT-1023', origen: 'Bodega Oeste', puerta: 'E4'),
 ];

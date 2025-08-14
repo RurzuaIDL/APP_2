@@ -16,6 +16,8 @@ dependencies:
   file_saver: ^0.2.12
   flutter_svg: ^2.0.7
   google_fonts: ^6.2.1
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
