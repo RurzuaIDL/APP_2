@@ -15,6 +15,8 @@ class GateSearchGrid extends StatefulWidget {
 class _GateSearchGridState extends State<GateSearchGrid> {
   final _controller = TextEditingController();
   String _query = '';
+  int _page = 0; // página actual (0-based)
+  static const int _pageSize = 10;
 
   @override
   void dispose() {
@@ -32,6 +34,16 @@ class _GateSearchGridState extends State<GateSearchGrid> {
     }).toList();
   }
 
+  int _pageCountFor(int total) {
+    if (total <= 0) return 1;
+    return (total + _pageSize - 1) ~/ _pageSize; // ceil
+  }
+
+  void _clampPage(int total) {
+    final last = _pageCountFor(total) - 1;
+    if (_page > last) _page = last.clamp(0, last);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -42,6 +54,7 @@ class _GateSearchGridState extends State<GateSearchGrid> {
         final crossAxisCount = w >= 960 ? 4 : (w >= 720 ? 3 : (isSM ? 2 : 1));
 
         final results = _filtered;
+        _clampPage(results.length); // asegura que la página exista
 
         // ---- Fix robusto: calculamos childAspectRatio en lugar de altura fija ----
         // Ancho real del tile considerando padding y gutters del Grid.
@@ -57,6 +70,17 @@ class _GateSearchGridState extends State<GateSearchGrid> {
             (isXS ? 128.0 : 118.0) + (textScale - 1.0) * 24.0 + 2.0; // +2px anti-redondeo
         final ratio = tileWidth / minCardHeight;
 
+        // ---- Slice de la página actual ----
+        final start = _page * _pageSize;
+        final endExclusive = (start + _pageSize) > results.length
+            ? results.length
+            : (start + _pageSize);
+        final pageItems =
+            (results.isEmpty || start >= results.length) ? const <GateItem>[] : results.sublist(start, endExclusive);
+
+        final totalPages = _pageCountFor(results.length);
+        final showPager = results.isNotEmpty && totalPages > 1;
+
         return Column(
           children: [
             // Buscador
@@ -64,7 +88,10 @@ class _GateSearchGridState extends State<GateSearchGrid> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: TextField(
                 controller: _controller,
-                onChanged: (v) => setState(() => _query = v),
+                onChanged: (v) => setState(() {
+                  _query = v;
+                  _page = 0; // reset al filtrar
+                }),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
                   hintText: 'Buscar por DT, Origen o Puerta...',
@@ -79,14 +106,17 @@ class _GateSearchGridState extends State<GateSearchGrid> {
                           icon: const Icon(Icons.clear),
                           onPressed: () {
                             _controller.clear();
-                            setState(() => _query = '');
+                            setState(() {
+                              _query = '';
+                              _page = 0;
+                            });
                           },
                         ),
                 ),
               ),
             ),
 
-            // Contenido
+            // Contenido + Paginador
             Expanded(
               child: results.isEmpty
                   ? Center(
@@ -110,19 +140,168 @@ class _GateSearchGridState extends State<GateSearchGrid> {
                         ),
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      itemCount: results.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: gutter,
-                        mainAxisSpacing: gutter,
-                        childAspectRatio: ratio, // <-- evita desbordes por redondeo
-                      ),
-                      itemBuilder: (context, i) => _GateCard(item: results[i]),
+                  : Column(
+                      children: [
+                        // Grid paginado
+                        Expanded(
+                          child: GridView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            itemCount: pageItems.length,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: gutter,
+                              mainAxisSpacing: gutter,
+                              childAspectRatio: ratio, // evita desbordes por redondeo
+                            ),
+                            itemBuilder: (context, i) => _GateCard(item: pageItems[i]),
+                          ),
+                        ),
+
+                        // Paginador responsive
+                        if (showPager)
+                          _PaginationBar(
+                            page: _page,
+                            totalPages: totalPages,
+                            totalItems: results.length,
+                            pageSize: _pageSize,
+                            onFirst: _page > 0
+                                ? () => setState(() => _page = 0)
+                                : null,
+                            onPrev: _page > 0
+                                ? () => setState(() => _page -= 1)
+                                : null,
+                            onNext: _page < totalPages - 1
+                                ? () => setState(() => _page += 1)
+                                : null,
+                            onLast: _page < totalPages - 1
+                                ? () => setState(() => _page = totalPages - 1)
+                                : null,
+                          ),
+                      ],
                     ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/* ---------------------- Paginador (responsive) ---------------------- */
+
+class _PaginationBar extends StatelessWidget {
+  final int page; // 0-based
+  final int totalPages;
+  final int totalItems;
+  final int pageSize;
+  final VoidCallback? onFirst;
+  final VoidCallback? onPrev;
+  final VoidCallback? onNext;
+  final VoidCallback? onLast;
+
+  const _PaginationBar({
+    required this.page,
+    required this.totalPages,
+    required this.totalItems,
+    required this.pageSize,
+    this.onFirst,
+    this.onPrev,
+    this.onNext,
+    this.onLast,
+  });
+
+  static int _fromItem(int page, int size, int total) {
+    if (total == 0) return 0;
+    return page * size + 1; // 1-based
+  }
+
+  static int _toItem(int page, int size, int total) {
+    final end = (page + 1) * size;
+    return end > total ? total : end;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pageHuman = page + 1;
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final isNarrow = w < 420; // breakpoint para apilar
+        final isUltraNarrow = w < 340; // etiqueta más corta
+
+        final rangeText = isUltraNarrow
+            ? 'Pág $pageHuman/$totalPages · $totalItems'
+            : 'Mostrando ${_fromItem(page, pageSize, totalItems)}–${_toItem(page, pageSize, totalItems)} de $totalItems';
+
+        final infoText = Text(
+          rangeText,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall,
+        );
+
+        final controls = Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          alignment: isNarrow ? WrapAlignment.center : WrapAlignment.end,
+          children: [
+            IconButton.filledTonal(
+              tooltip: 'Primera página',
+              onPressed: onFirst,
+              icon: const Icon(Icons.first_page),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'Anterior',
+              onPressed: onPrev,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: Text('Página $pageHuman de $totalPages'),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'Siguiente',
+              onPressed: onNext,
+              icon: const Icon(Icons.chevron_right),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'Última página',
+              onPressed: onLast,
+              icon: const Icon(Icons.last_page),
+            ),
+          ],
+        );
+
+        if (isNarrow) {
+          // Columna en pantallas angostas
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: infoText),
+                const SizedBox(height: 8),
+                controls,
+              ],
+            ),
+          );
+        }
+
+        // Fila en pantallas medias/anchas
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Row(
+            children: [
+              // que no desborde
+              Expanded(child: infoText),
+              const SizedBox(width: 12),
+              controls,
+            ],
+          ),
         );
       },
     );
@@ -167,6 +346,7 @@ class _GateCardState extends State<_GateCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutCubic,
@@ -197,56 +377,60 @@ class _GateCardState extends State<_GateCard> {
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           color: _hover ? hoverTint : baseColor,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // DT
-                Row(
-                  children: [
-                    const Icon(Icons.confirmation_number_outlined, size: 18),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'DT: ${widget.item.dt}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                        overflow: TextOverflow.ellipsis,
+          child: InkWell(
+            onTap: () {
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // DT
+                  Row(
+                    children: [
+                      const Icon(Icons.confirmation_number_outlined, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'DT: ${widget.item.dt}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Origen
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined, size: 18),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        widget.item.origen,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Origen
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.item.origen,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Puerta
-                Row(
-                  children: [
-                    const Icon(Icons.door_front_door_outlined, size: 18),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Puerta ${widget.item.puerta}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Puerta
+                  Row(
+                    children: [
+                      const Icon(Icons.door_front_door_outlined, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Puerta ${widget.item.puerta}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -268,4 +452,18 @@ const demoGateItems = <GateItem>[
   GateItem(dt: 'DT-1008', origen: 'Puerto Seco', puerta: 'C5'),
   GateItem(dt: 'DT-1009', origen: 'Depósito Central', puerta: 'D2'),
   GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+    GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+      GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+        GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+          GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+            GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+              GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+                  GateItem(dt: 'DT-1010', origen: 'Bodega Oeste', puerta: 'E4'),
+
 ];
